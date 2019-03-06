@@ -35,28 +35,28 @@ You will need a functional Ruby 2.5+ environment (one installed via RVM or simil
 1. Clone the repository into `/opt/flight`
 
     ```bash
-cd /opt
-git clone https://github.com/openflighthpc/flight-runway flight
+    cd /opt
+    git clone https://github.com/openflighthpc/flight-runway flight
     ```
 
 2. Replace the convenience wrappers with symlinks to the programs supplied by your Ruby environment:
 
     ```bash
-cd /opt/flight/bin
-for a in bundle gem irb rake ruby 
-  rm -f $a
-  ln -s $(which $a) $a
-done
+    cd /opt/flight/bin
+    for a in bundle gem irb rake ruby 
+      rm -f $a
+      ln -s $(which $a) $a
+    done
     ```
 
 3. Place scripts and configuration files from the `pkg/` directory in the expected locations:
 
     ```bash
-cd /opt/flight
-mv pkg/bin/flintegrate bin/flintegrate
-mkdir -p /opt/flight/opt/runway
-mv pkg/dist /opt/flight/opt/runway
-rmdir pkg
+    cd /opt/flight
+    mv pkg/bin/flintegrate bin/flintegrate
+    mkdir -p /opt/flight/opt/runway
+    mv pkg/dist /opt/flight/opt/runway
+    rmdir pkg
     ```
 
 ## Configuration
@@ -94,7 +94,7 @@ OpenFlightHPC home page: <https://openflighthpc.org/>
 
 The simplest way to make Flight Runway available is by adding the `/opt/flight/bin` directory to your PATH environment variable:
 
-```bash
+```
 [chrisdemo@localhost ~]$ PATH=/opt/flight/bin:$PATH
 [chrisdemo@localhost ~]$ flight
 ```
