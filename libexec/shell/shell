@@ -1,0 +1,167 @@
+#!/usr/bin/env ruby
+#==============================================================================
+# Copyright (C) 2019-present Alces Flight Ltd.
+#
+# This file is part of Flight Runway.
+#
+# This program and the accompanying materials are made available under
+# the terms of the Eclipse Public License 2.0 which is available at
+# <https://www.eclipse.org/legal/epl-2.0>, or alternative license
+# terms made available by Alces Flight Ltd - please direct inquiries
+# about licensing to licensing@alces-flight.com.
+#
+# Flight Runway is distributed in the hope that it will be useful, but
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
+# OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
+# PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more
+# details.
+#
+# You should have received a copy of the Eclipse Public License 2.0
+# along with Flight Runway. If not, see:
+#
+#  https://opensource.org/licenses/EPL-2.0
+#
+# For more information on <project>, please visit:
+# https://github.com/openflighthpc/flight-runway
+#==============================================================================
+require 'readline'
+require 'pathname'
+require 'abbrev'
+
+history_filepath = Pathname.new(File.join(ENV['HOME'], '.flight_history'))
+at_exit { save_history history_filepath }
+
+def load_history(filepath)
+  filepath.readlines.each { |line| Readline::HISTORY << line.chomp  } if filepath.file?
+end
+
+def save_history(filepath)
+  filepath.parent.mkpath unless filepath.parent.directory?
+  filepath.open('w') do |f|
+    Readline::HISTORY.each {|l| f.puts l unless l.empty? }
+  end
+end
+
+def commands
+  @commands ||= []
+end
+
+def command_metadata
+  @command_metadata ||= {}
+end
+
+def command(cmd)
+  command_metadata[cmd]
+end
+
+def load_commands
+  Dir.glob('/opt/flight/libexec/commands/*').each do |cmd|
+    name = File.basename(cmd)
+    commands << name unless name == 'shell'
+    File.readlines(cmd).each do |s|
+      if s =~ /^: SYNOPSIS: /
+        command_metadata[name] = s[12..-1].chomp
+      end
+    end
+  end
+end
+
+def run(command)
+  pid = fork {
+    system('/opt/flight/bin/flight', *(command.split(' ')))
+  }
+  Process.wait(pid)
+end
+
+def help
+  puts <<EOF
+Usage: COMMAND [[OPTION]... [ARGS]]
+Perform high performance computing management activities.
+
+Commands:
+EOF
+  commands.each do |cmd|
+    printf("  %-20s %s\n", cmd, command(cmd))
+  end
+puts <<EOF
+  exit                 Exit the shell
+
+For more help on a particular command run:
+  COMMAND help
+
+Please report bugs to <flight@alces-flight.com>
+Alces Flight home page: <https://alces-flight.com/>
+EOF
+end
+
+def valid_command?(cmd)
+  Abbrev.abbrev(commands).include?(cmd)
+end
+
+load_commands
+load_history history_filepath
+Readline.completion_proc = lambda do |val|
+  if Readline.line_buffer.include?(' ')
+    nil
+  else
+    commands.grep( /^#{Regexp.escape(val)}/ )
+  end
+end
+
+base_command = ARGV[0]
+if base_command
+  if ! valid_command?(base_command)
+    puts "flight shell: '#{base_command}' is not a known command."
+    exit 1
+  else
+    base_command = commands.find do |cmd|
+      cmd == base_command ||
+        File.fnmatch?("#{base_command}*", cmd)
+    end
+  end
+end
+
+prompt = if base_command
+ "flight #{base_command}> "
+else
+ "flight> "
+end
+
+begin
+  while line = Readline.readline(prompt, true)
+    line.strip!
+    if line == 'exit' || line == 'quit'
+      break
+    elsif line =~ /^\s*$/
+      # Remove blank lines from history
+      Readline::HISTORY.pop
+    else
+      # prevent duplicates
+      if Readline::HISTORY.length > 1 && Readline::HISTORY[-2] == line
+        Readline::HISTORY.pop
+      end
+      if base_command
+        run("#{base_command} #{line}")
+      else
+        cmd = line.split.first
+        if cmd == 'hist'
+          puts Readline::HISTORY.to_a
+        elsif line == 'help'
+          help
+        elsif cmd == 'shell'
+          puts "flight: hey, wait a minute... you're already in a shell!"
+        elsif valid_command?(cmd)
+          run(line)
+        else
+          puts "flight: '#{cmd}' is not a known command. See 'help'."
+        end
+      end
+    end
+  end
+rescue Interrupt
+  puts ""
+  retry
+end
+
+puts "" if line.nil?

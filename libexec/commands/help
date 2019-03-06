@@ -1,0 +1,109 @@
+: '
+: NAME: help
+: SYNOPSIS: Display help and usage information
+: VERSION: 1.0.0
+: '
+#==============================================================================
+# Copyright (C) 2019-present Alces Flight Ltd.
+#
+# This file is part of Flight Runway.
+#
+# This program and the accompanying materials are made available under
+# the terms of the Eclipse Public License 2.0 which is available at
+# <https://www.eclipse.org/legal/epl-2.0>, or alternative license
+# terms made available by Alces Flight Ltd - please direct inquiries
+# about licensing to licensing@alces-flight.com.
+#
+# Flight Runway is distributed in the hope that it will be useful, but
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
+# OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
+# PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more
+# details.
+#
+# You should have received a copy of the Eclipse Public License 2.0
+# along with Flight Runway. If not, see:
+#
+#  https://opensource.org/licenses/EPL-2.0
+#
+# For more information on <project>, please visit:
+# https://github.com/openflighthpc/flight-runway
+#==============================================================================
+# vim: set filetype=sh :
+action=$1
+shift
+
+extract_info() {
+  local info
+  info=$(awk -f <(cat <<'EOF'
+  {
+    if (substr($0,0,1) != ":") {
+      next
+    }
+    split($0, a, ": ")
+    gsub(/[[:space:]]*/, "", a[2])
+    if (a[3]) {
+      print "cmd_" a[2] "='" a[3] "'"
+    }
+    if (a[2]=="'") {
+      if (started) {
+        exit
+      } else {
+        started=1
+      }
+    }
+  }
+EOF
+                 ) $1)
+  unset cmd_NAME cmd_SYNOPSIS cmd_VERSION cmd_HELP cmd_ROOT
+  if [ "$info" ]; then
+    eval "$info"
+  fi
+}
+
+available() {
+  [ -z "$cmd_ROOT" ] || sudo -l /bin/bash &>/dev/null
+}
+
+case $action in
+  help|hel|he|h|--help|-h)
+    cat <<EOF
+  SYNOPSIS:
+
+    $flight_NAME help [<command>]
+
+  DESCRIPTION:
+
+    Get help for a <command>.  If no <command> is specified,
+    show some general help.
+
+EOF
+    ;;
+  ?*)
+    # provide a convenience for those who get "help ACTION" and
+    # "ACTION help" inverted :)
+    exec ${flight_ROOT}/bin/${flight_NAME} $action help "$@"
+    ;;
+  *)
+    cat <<EOF
+Usage: ${flight_NAME} COMMAND [[OPTION]... [ARGS]]
+Perform high performance computing management activities.
+
+Commands:
+EOF
+    for a in "${flight_COMMAND_ROOT}"/*; do
+      extract_info $a
+      if [ "$cmd_NAME" ] && available "$cmd_NAME"; then
+        printf "  %-22s  %s\n" "${flight_NAME} $cmd_NAME" "$cmd_SYNOPSIS."
+      fi
+    done
+    cat <<EOF
+
+For more help on a particular command run:
+  ${flight_NAME} COMMAND help
+
+Please report bugs to <flight@openflighthpc.org>
+OpenFlight home page: <https://openflighthpc.org/>
+EOF
+    ;;
+esac

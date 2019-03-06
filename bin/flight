@@ -1,0 +1,149 @@
+#!/bin/bash
+#==============================================================================
+# Copyright (C) 2019-present Alces Flight Ltd.
+#
+# This file is part of Flight Runway.
+#
+# This program and the accompanying materials are made available under
+# the terms of the Eclipse Public License 2.0 which is available at
+# <https://www.eclipse.org/legal/epl-2.0>, or alternative license
+# terms made available by Alces Flight Ltd - please direct inquiries
+# about licensing to licensing@alces-flight.com.
+#
+# Flight Runway is distributed in the hope that it will be useful, but
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
+# OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
+# PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more
+# details.
+#
+# You should have received a copy of the Eclipse Public License 2.0
+# along with Flight Runway. If not, see:
+#
+#  https://opensource.org/licenses/EPL-2.0
+#
+# For more information on <project>, please visit:
+# https://github.com/openflighthpc/flight-runway
+#==============================================================================
+usage() {
+  if [ -f "${flight_COMMAND_ROOT}/help" ]; then
+    exec $0 help
+  else
+    # Fallback to something trivial until help is installed!
+    echo "Usage: $flight_NAME <command>"
+  fi
+}
+
+extract_info() {
+  local info
+  info=$(awk -f <(cat <<'EOF'
+  {
+    if (substr($0,0,1) != ":") {
+      next
+    }
+    split($0, a, ": ")
+    gsub(/[[:space:]]*/, "", a[2])
+    if (a[3]) {
+      print "cmd_" a[2] "='" a[3] "'"
+    }
+    if (a[2]=="'") {
+      if (started) {
+        exit
+      } else {
+        started=1
+      }
+    }
+  }
+EOF
+                 ) $1)
+  unset cmdflight_NAME cmd_SYNOPSIS cmd_VERSION cmd_HELP cmd_ROOT
+  if [ "$info" ]; then
+    eval "$info"
+  fi
+}
+
+setup() {
+  local a xdg_config
+  IFS=: read -a xdg_config <<< "${XDG_CONFIG_HOME:-$HOME/.config}:${XDG_CONFIG_DIRS:-/etc/xdg}"
+  for a in "${xdg_config[@]}"; do
+    if [ -e "${a}"/flight.rc ]; then
+      source "${a}"/flight.rc
+      break
+    fi
+  done
+  if [ -d "${flight_ROOT}"/libexec/hooks ]; then
+    shopt -s nullglob
+    for a in "${flight_ROOT}"/libexec/hooks/*; do
+      source "${a}"
+    done
+    shopt -u nullglob
+  fi
+}
+
+available() {
+  extract_info "$1"
+  [ -z "$cmd_ROOT" ] || sudo -l /bin/bash &>/dev/null
+}
+
+main() {
+  local cmd x a y
+  cmd=$1
+  shift
+
+  if [ -z "$cmd" -o "$cmd" == '-h' -o "$cmd" == '--help' ]; then
+    usage
+  elif [ -f "$flight_COMMAND_ROOT/$cmd" ]; then
+    exec /bin/bash $flight_COMMAND_ROOT/$cmd "$@"
+  else
+    x=("${flight_COMMAND_ROOT}/$cmd"*)
+
+    if [ $x = "${flight_COMMAND_ROOT}/$cmd"'*' ]; then
+      # no match
+      echo "${flight_NAME}: '$cmd' is not a known command. See '${flight_NAME} --help'."
+      exit 1
+    elif [ ${#x[*]} = 1 ]; then
+      # matched one
+      if available "${x[0]}"; then
+        exec /bin/bash "${flight_COMMAND_ROOT}/$cmd"* "$@"
+      else
+        echo "${flight_NAME} $(basename ${x[0]}): only available to users with administrative rights."
+        exit 1
+      fi
+    elif [ ${#x[*]} -gt 1 ]; then
+      # matched > 1
+      # check to see if any require root and we can't get root
+      for a in ${x[*]}; do
+        if available $a; then
+          y="$y $a"
+        fi
+      done
+      x=(${y# })
+      if [ ${#x[*]} = 1 ]; then
+        exec /bin/bash "$x" "$@"
+      fi
+      echo "${flight_NAME}: ambiguous command: $cmd"
+      echo "Did you mean one of these?"
+      for a in ${x[*]}; do
+        echo "        $(basename "$a")"
+      done
+      echo ""
+      exit 1
+    fi
+  fi
+}
+
+if [ "$flight_DEBUG" ]; then
+  set -x
+fi
+
+export flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
+export flight_NAME=flight
+export flight_COMMAND_ROOT=${flight_ROOT}/libexec/commands
+
+setup
+
+if ! type flexec &>/dev/null; then
+  PATH=${flight_ROOT}/bin:$PATH
+fi
+
+main "$@"

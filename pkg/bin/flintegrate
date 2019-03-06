@@ -1,0 +1,204 @@
+#!/usr/bin/env ruby
+#==============================================================================
+# Copyright (C) 2019-present Alces Flight Ltd.
+#
+# This file is part of Flight Runway.
+#
+# This program and the accompanying materials are made available under
+# the terms of the Eclipse Public License 2.0 which is available at
+# <https://www.eclipse.org/legal/epl-2.0>, or alternative license
+# terms made available by Alces Flight Ltd - please direct inquiries
+# about licensing to licensing@alces-flight.com.
+#
+# Flight Runway is distributed in the hope that it will be useful, but
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
+# OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
+# PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more
+# details.
+#
+# You should have received a copy of the Eclipse Public License 2.0
+# along with Flight Runway. If not, see:
+#
+#  https://opensource.org/licenses/EPL-2.0
+#
+# For more information on <project>, please visit:
+# https://github.com/openflighthpc/flight-runway
+#==============================================================================
+require 'yaml'
+require 'uri'
+require 'open-uri'
+require 'tempfile'
+require 'fileutils'
+
+CANDIDATES = ['integrate.yml','scripts/integrate.yml']
+
+def load_instructions(target)
+  STDERR.print "Loading integration instructions ... "
+  instructions = if File.file?(target)
+                   YAML.load_file(target)
+                 elsif File.directory?(target)
+                   CANDIDATES.each do |candidate|
+                     f = File.join(target,candidate)
+                     break YAML.load_file(f) if File.file?(f)
+                   end
+                 end
+  raise "No instructions found" if instructions.nil?
+  STDERR.puts "OK."
+  STDERR.print "Verifying instructions ... "
+  [:name, :command, :configure].each do |k|
+    if ! instructions.key?(k)
+      raise "Invalid instructions; missing #{k}"
+    end
+  end
+  STDERR.puts "OK."
+  instructions
+rescue
+  STDERR.puts "Unable to load instructions: #{$!.message}."
+  exit 1
+end
+
+def download_and_extract(url, target)
+  tmpf = Tempfile.new('flintegrate')
+  begin
+    STDERR.print "Downloading from URL: #{url} ... "
+    tmpf.write(open(url).read)
+    STDERR.puts "OK."
+    tmpf.close
+    FileUtils.mkdir_p(target)
+    STDERR.print "Extracting archive ... "
+    result = IO.popen("unzip #{tmpf.path} -d #{target}") do |io|
+      io.read
+    end
+    errlvl = $?
+    if errlvl != 0
+      STDERR.puts "Unable to extract downloaded file"
+      exit 1
+    end
+    entries = Dir["#{target}/*"]
+    if entries.length == 1
+      FileUtils.mv(Dir["#{entries.first}/*"], target)
+      FileUtils.rm_rf(entries.first)
+    end
+    STDERR.puts "OK."
+  ensure
+    tmpf.close
+    tmpf.unlink
+  end
+rescue
+  STDERR.puts "Unable to download/extract: #{$!.message}"
+  exit 1
+end
+
+def assert_viable_target(target)
+  if File.exists?(target)
+    STDERR.puts "Supplied target directory already exists: #{target}"
+    exit 1
+  end
+end
+
+def assert_valid_target(target)
+  if !File.directory?(target)
+    STDERR.puts "Supplied directory does not exist: #{target}"
+    exit 1
+  end
+end
+
+def url?(url)
+  url =~ /\A#{URI::regexp(['http', 'https'])}\z/
+end
+
+def usage
+  STDERR.puts "Usage: flintegrate [<metadata>] [<url>] <target>"
+  STDERR.puts "       flintegrate <metadata>"
+end
+
+def integrate(instructions, target)
+  name = instructions[:name]
+  version = instructions[:version]
+  configure = instructions[:configure]
+  command = instructions[:command]
+  url = instructions[:url]
+  command.gsub!('%DIR%', target)
+  command.gsub!('%VERSION%', version || '1.0.0')
+  tmpf = Tempfile.new('flintegrate')
+  begin
+    tmpf.write("PATH=#{ENV.fetch('flight_ROOT', '/opt/flight')}/bin:$PATH\ncd #{target}\n#{configure}")
+    tmpf.close
+    STDERR.print "Performing configuration ... "
+    result = IO.popen("bash #{tmpf.path}") do |io|
+      io.read
+    end
+    errlvl = $?
+    if errlvl != 0
+      STDERR.puts "Configuration failed:"
+      STDERR.puts result
+      exit 1
+    end
+    STDERR.puts "OK."
+  ensure
+    tmpf.close
+    tmpf.unlink
+  end
+  STDERR.print "Integrating ... "
+  File.write("#{ENV.fetch('flight_ROOT', '/opt/flight')}/libexec/commands/#{name}", command)
+  STDERR.puts "OK."
+end
+
+if ARGV.length == 0 || ARGV.length > 3
+  usage
+elsif ARGV.length == 3
+  # if three args, first arg is instructions, second arg is a url,
+  # downlad, extract to third arg, integrate
+  if url?(ARGV[1])
+    assert_viable_target(ARGV[2])
+    instructions = load_instructions(ARGV[0])
+    download_and_extract(ARGV[1], ARGV[2])
+    integrate(instructions, ARGV[2])
+  else
+    usage
+  end
+elsif ARGV.length == 2
+  if url?(ARGV[0])
+    # if two args, if first arg is a url, then download, extract to
+    # second arg, check for instructions, integrate
+    assert_viable_target(ARGV[1])
+    download_and_extract(ARGV[0], ARGV[1])
+    instructions = load_instructions(ARGV[1])
+    integrate(instructions, ARGV[1])
+  elsif url?(ARGV[1])
+    base = File.basename(ARGV[0], '.yml')
+    target = "#{ENV.fetch('flight_ROOT', '/opt/flight')}/opt/#{base}"
+    assert_viable_target(target)
+    download_and_extract(ARGV[1], target)
+    instructions = load_instructions(ARGV[0])
+    integrate(instructions, target)
+  else
+    # if two args, if first arg is instructions and second arg path
+    # exists, integrate
+    assert_valid_target(ARGV[1])
+    instructions = load_instructions(ARGV[0])
+    integrate(instructions, ARGV[1])
+  end
+else
+  if File.file?(ARGV[0])
+    # single arg is a file; it's instructions and should contain a download URL
+    base = File.basename(ARGV[0], '.yml')
+    target = "#{ENV.fetch('flight_ROOT', '/opt/flight')}/opt/#{base}"
+    assert_viable_target(target)
+    instructions = load_instructions(ARGV[0])
+    if instructions[:url]
+      download_and_extract(instructions[:url], target)
+      integrate(instructions, target)
+    else
+      STDERR.puts "Invalid instructions; missing download URL."
+      exit 1
+    end
+  else
+    # otherwise it's a source path (and dest path), and should
+    # contain instructions, integrate
+    assert_valid_target(ARGV[0])
+    instructions = load_instructions(ARGV[0])
+    integrate(instructions, ARGV[0])
+  end
+end
