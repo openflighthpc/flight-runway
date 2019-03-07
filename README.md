@@ -14,13 +14,35 @@ A base platform/environment for managing and executing OpenFlight tools.
 
 ## Installation
 
-### RPM installation
+### From the OpenFlight `yum` repository
 
-The recommended installation method is to use the RPM provided for installation on Enterprise Linux 7 series distributions, e.g. CentOS 7.  Install using `yum`, for e.g.:
+The recommended installation method is to use the RPM provided for
+installation on Enterprise Linux 7 series distributions, e.g. CentOS
+7:
 
-```bash
-yum install https://s3-eu-west-1.amazonaws.com/openflighthpc/rpms/flight-runway-0.3.0-1.el7.x86_64.rpm
-```
+1. Set up the `yum` repository on your system.  For production
+   releases use `openflight.repo` and for development releases use
+   `openflight-dev.repo`:
+
+   ```
+   cd /etc/yum/repos.d
+   # For production releases
+   wget https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/openflight.repo
+   # For development releases
+   wget https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight-dev/openflight-dev.repo
+   ```
+
+2. Rebuild your `yum` cache:
+
+   ```
+   yum makecache
+   ```
+
+3. Install the `flight-runway` RPM with `yum`:
+
+   ```
+   yum install flight-runway
+   ```
 
 ### Manual installation
 
@@ -68,7 +90,7 @@ Once Flight Runway is installed, you can choose one of the following options for
 You can operate Flight Runway without integrating it in your environment.  Address binaries using their absolute paths, e.g.:
 
 ```
-[chrisemo@localhost ~]$ /opt/flight/bin/flight
+[chrisdemo@localhost ~]$ /opt/flight/bin/flight
 ```
 
 Alternatively start a `bash` shell with the `flactivate` command which is preconfigured for use of the Flight Runway tools:
