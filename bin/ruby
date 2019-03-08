@@ -46,10 +46,13 @@ _setup() {
 _setenv() {
   local _root _lib
   _root=${flight_ROOT}/opt/runway/embedded
-  _lib=${_root}/lib/ruby
-  _rv=2.5.0
 
   PATH=${_root}/bin:$PATH
+  LD_LIBRARY_PATH=${_root}/lib:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH
+
+  _lib=${_root}/lib/ruby
+  _rv=$(${flight_ROOT}/opt/runway/embedded/bin/ruby --version | cut -f2 -d' ' | cut -f1-2 -d'.').0
 
   GEM_HOME=${_lib}/gems/${_rv}
   GEM_PATH=${_lib}/gems/${_rv}
@@ -64,11 +67,13 @@ _setenv() {
   RUBYLIB=$RUBYLIB:${_lib}/${_rv}/x86_64-linux
   export RUBYLIB
 
-  LD_LIBRARY_PATH=${_root}/lib:$LD_LIBRARY_PATH
-  export LD_LIBRARY_PATH
+  SSL_CERT_FILE=${_root}/ssl/certs/cacert.pem
+  export SSL_CERT_FILE
+
+  export flight_ROOT
 }
 
-flight_ROOT=${flight_ROOT:-/opt/flight}
+flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
 _setup
 _setenv
 unset _setup _setenv
