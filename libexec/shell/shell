@@ -56,7 +56,14 @@ def command(cmd)
 end
 
 def load_commands
-  Dir.glob('/opt/flight/libexec/commands/*').each do |cmd|
+  Dir.glob(
+    File.join(
+      ENV.fetch('flight_ROOT', '/opt/flight'),
+      'libexec',
+      'commands',
+      '*'
+    )
+  ).each do |cmd|
     name = File.basename(cmd)
     commands << name unless name == 'shell'
     File.readlines(cmd).each do |s|
@@ -69,7 +76,14 @@ end
 
 def run(command)
   pid = fork {
-    system('/opt/flight/bin/flight', *(command.split(' ')))
+    system(
+      File.join(
+        ENV.fetch('flight_ROOT', '/opt/flight'),
+        'bin',
+        'flight'
+      ),
+      *(command.split(' '))
+    )
   }
   Process.wait(pid)
 end
@@ -90,8 +104,8 @@ puts <<EOF
 For more help on a particular command run:
   COMMAND help
 
-Please report bugs to <flight@alces-flight.com>
-Alces Flight home page: <https://alces-flight.com/>
+Please report bugs to <flight@openflighthpc.org>
+OpenFlight home page: <https://openflighthpc.org/>
 EOF
 end
 
