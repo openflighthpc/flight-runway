@@ -25,7 +25,7 @@
 # For more information on <project>, please visit:
 # https://github.com/openflighthpc/flight-runway
 #==============================================================================
-_setup() {
+setup() {
   local a xdg_config
   IFS=: read -a xdg_config <<< "${XDG_CONFIG_HOME:-$HOME/.config}:${XDG_CONFIG_DIRS:-/etc/xdg}"
   for a in "${xdg_config[@]}"; do
@@ -43,9 +43,45 @@ _setup() {
   fi
 }
 
-flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
-_setup
-unset _setup
+_can_sudo() {
+  if [ "$1" == "true" ]; then
+    sudo -l yum install -y -e0 "$@" &>/dev/null
+  else
+    sudo -n -l yum install -y -e0 "$@" &>/dev/null
+  fi
+}
 
-exec ${flight_ROOT}/bin/ruby \
-     ${flight_ROOT}/opt/runway/embedded/bin/gem "$@"
+main() {
+  local interactive missing a
+  interactive=false
+  if [ "$1" == "--interactive" ]; then
+    interactive=true
+    shift
+  fi
+  if [ "$UID" == "0" ]; then
+    yum install -y -e0 "$@"
+  elif _can_sudo "${interactive}" "$@"; then
+    sudo yum install -y -e0 "$@"
+  else
+    missing=()
+    for a in "$@"; do
+      if ! rpm -qa $a | grep -q "${a}"; then
+        missing+=("$a")
+      fi
+    done
+    if [ "${#missing}" -gt 0 ]; then
+      cat <<EOF
+Please make a request to your system administrator for the
+installation of the following packages:
+
+  ${missing[@]}
+  
+EOF
+      return 1
+    fi
+  fi
+}
+
+export flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
+setup
+main "$@"

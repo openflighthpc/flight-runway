@@ -43,7 +43,7 @@ _setup() {
   fi
 }
 
-flight_ROOT=${flight_ROOT:-/opt/flight}
+flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
 _setup
 unset _setup
 

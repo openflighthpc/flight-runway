@@ -1,4 +1,3 @@
-#!/bin/bash
 #==============================================================================
 # Copyright (C) 2019-present Alces Flight Ltd.
 #
@@ -25,27 +24,51 @@
 # For more information on <project>, please visit:
 # https://github.com/openflighthpc/flight-runway
 #==============================================================================
-_setup() {
-  local a xdg_config
-  IFS=: read -a xdg_config <<< "${XDG_CONFIG_HOME:-$HOME/.config}:${XDG_CONFIG_DIRS:-/etc/xdg}"
-  for a in "${xdg_config[@]}"; do
-    if [ -e "${a}"/flight.rc ]; then
-      source "${a}"/flight.rc
-      break
-    fi
-  done
-  if [ -d "${flight_ROOT}"/libexec/hooks ]; then
-    shopt -s nullglob
-    for a in "${flight_ROOT}"/libexec/hooks/*; do
-      source "${a}"
-    done
-    shopt -u nullglob
-  fi
-}
+require 'erb'
 
-flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
-_setup
-unset _setup
+module OpenFlight
+  module Banner
+    class << self
+      def sysroot
+        File.join(
+          File.dirname(__FILE__),
+          'resources'
+        )
+      end
 
-exec ${flight_ROOT}/bin/ruby \
-     ${flight_ROOT}/opt/runway/embedded/bin/gem "$@"
+      def root
+        File.join(
+          ENV.fetch('flight_ROOT','/opt/flight'),
+          'etc',
+          'banner'
+        )
+      end
+
+      def priority_root
+        File.directory?(root) ? root : sysroot
+      end
+
+      def banner_template_file
+        f = File.join(root, 'banner.erb')
+        File.exist?(f) ? f : File.join(sysroot, 'banner.erb')
+      end
+
+      def template
+        ERB.new(
+          File.read(banner_template_file),
+          nil,
+          '-'
+        )
+      end
+
+      def render(opts, banner = nil)
+        render_env = Module.new
+        render_env.instance_variable_set(:@root, priority_root)
+        render_env.instance_variable_set(:@opts, opts)
+        render_env.instance_variable_set(:@banner, banner)
+        ctx = render_env.instance_eval { binding }
+        template.result(ctx)
+      end
+    end
+  end
+end

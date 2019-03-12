@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 #==============================================================================
 # Copyright (C) 2019-present Alces Flight Ltd.
 #
@@ -25,27 +25,18 @@
 # For more information on <project>, please visit:
 # https://github.com/openflighthpc/flight-runway
 #==============================================================================
-_setup() {
-  local a xdg_config
-  IFS=: read -a xdg_config <<< "${XDG_CONFIG_HOME:-$HOME/.config}:${XDG_CONFIG_DIRS:-/etc/xdg}"
-  for a in "${xdg_config[@]}"; do
-    if [ -e "${a}"/flight.rc ]; then
-      source "${a}"/flight.rc
-      break
-    fi
-  done
-  if [ -d "${flight_ROOT}"/libexec/hooks ]; then
-    shopt -s nullglob
-    for a in "${flight_ROOT}"/libexec/hooks/*; do
-      source "${a}"
-    done
-    shopt -u nullglob
-  fi
-}
+require 'openflight/banner'
 
-flight_ROOT=${flight_ROOT:-$(cd $(dirname ${BASH_SOURCE[0]})/.. && pwd)}
-_setup
-unset _setup
+banner =
+  if ARGV[0] && ! ARGV[0].include?('=')
+    ARGV.shift
+  end
 
-exec ${flight_ROOT}/bin/ruby \
-     ${flight_ROOT}/opt/runway/embedded/bin/gem "$@"
+opts = {}.tap do |h|
+  ARGV.each do |kv|
+    k, v = kv.split('=')
+    h[k] = v
+  end
+end
+
+puts OpenFlight::Banner.render(opts, banner)

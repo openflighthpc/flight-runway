@@ -1,0 +1,36 @@
+<%
+@root ||= File.dirname(__FILE__)
+
+require 'yaml'
+begin
+  require 'paint'
+rescue LoadError
+  nil
+end
+if ! Kernel.const_defined?(:Paint)
+  Bundler.with_clean_env do
+    $:.unshift "#{ENV['GEM_HOME']}/gems/paint-2.1.0/lib"
+    require 'paint'
+  end
+end
+
+def render_banner(banner_file, opts)
+  f = File.join(@root,banner_file) + '.yml'
+  if ! File.exist?(f)
+    puts Paint["Banner file not found: #{banner_file}",:red]
+    return
+  end
+  h = YAML.load_file(f)
+  File.read(File.join(@root,h[:file])).tap do |s|
+    h[:colors].each_with_index do |color, idx|
+      s.gsub!("%#{idx}%",Paint.color(*color))
+    end
+    opts.each do |k,v|
+      s.gsub!(/%#{k.upcase}:?(.*)%/) {|m| sprintf("%#{$1}s",v)}
+    end
+    s.gsub!(/%\w+:?(.*)%/) {|m| sprintf("%#{$1}s",'')}
+  end
+end
+
+-%>
+<%= render_banner(@banner || 'banner', @opts || {}) -%><%= Paint.color(0,0) %>

@@ -1,0 +1,7 @@
+---
+:file: banner.txt
+:colors:
+  - ['#0097df']
+  - ['#aee1f9']
+  - [1, 38, 5, 15]
+  - ['#ccddee']
