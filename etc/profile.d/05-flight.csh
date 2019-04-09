@@ -32,6 +32,7 @@ alias flight $prefix'$flight_ROOT/bin/flight \!*; '$postfix
 alias fl $prefix'$flight_ROOT/bin/flight \!*; '$postfix
 alias flexec $prefix'$flight_ROOT/bin/flexec \!*; '$postfix
 alias flactivate $prefix'$flight_ROOT/bin/flactivate \!*; '$postfix
+alias flintegrate $prefix'$flight_ROOT/bin/flintegrate \!*; '$postfix
 
 unset prefix
 unset postfix

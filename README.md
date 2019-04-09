@@ -25,7 +25,7 @@ installation on Enterprise Linux 7 series distributions, e.g. CentOS
    `openflight-dev.repo`:
 
    ```
-   cd /etc/yum/repos.d
+   cd /etc/yum.repos.d
    # For production releases
    wget https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/openflight.repo
    # For development releases
