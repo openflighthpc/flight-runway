@@ -85,7 +85,7 @@ EOF
     exec ${flight_ROOT}/bin/${flight_NAME} $action help "$@"
     ;;
   *)
-    "${flight_ROOT}"/opt/runway/bin/banner
+    flexec ruby "${flight_ROOT}"/opt/runway/bin/banner
     cat <<EOF
 Usage: ${flight_NAME} COMMAND [[OPTION]... [ARGS]]
 Perform high performance computing management activities.
