@@ -29,4 +29,8 @@ flexec() {
   fi
 }
 
-export -f flight fl flexec flactivate
+flintegrate() {
+  ${flight_ROOT}/bin/flintegrate "$@"
+}
+
+export -f flight fl flexec flactivate flintegrate
