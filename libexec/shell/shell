@@ -48,11 +48,15 @@ def commands
 end
 
 def command_metadata
-  @command_metadata ||= {}
+  @command_metadata ||= Hash.new {|h,k| h[k] = {}}
 end
 
 def command(cmd)
-  command_metadata[cmd]
+  command_metadata[cmd][:synopsis]
+end
+
+def root?
+  system('sudo -ln /bin/bash &>/dev/null')
 end
 
 def load_commands
@@ -67,8 +71,10 @@ def load_commands
     name = File.basename(cmd)
     commands << name unless name == 'shell'
     File.readlines(cmd).each do |s|
-      if s =~ /^: SYNOPSIS: /
-        command_metadata[name] = s[12..-1].chomp
+      if s =~ /^: ROOT: true/
+        command_metadata[name][:root] = true
+      elsif s =~ /^: SYNOPSIS: /
+        command_metadata[name][:synopsis] = s[12..-1].chomp
       end
     end
   end
@@ -96,7 +102,9 @@ Perform high performance computing management activities.
 Commands:
 EOF
   commands.each do |cmd|
-    printf("  %-20s %s\n", cmd, command(cmd))
+    unless command_metadata[cmd][:root] && !root?
+      printf("  %-20s %s\n", cmd, command(cmd))
+    end
   end
 puts <<EOF
   exit                 Exit the shell
@@ -127,6 +135,9 @@ base_command = ARGV[0]
 if base_command
   if ! valid_command?(base_command)
     puts "flight shell: '#{base_command}' is not a known command."
+    exit 1
+  elsif command_metadata[base_command][:root] && !root?
+    puts "flight shell #{base_command}: only available to users with administrative rights"
     exit 1
   else
     base_command = commands.find do |cmd|
