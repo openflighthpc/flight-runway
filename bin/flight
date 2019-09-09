@@ -82,7 +82,7 @@ setup() {
 
 available() {
   extract_info "$1"
-  [ -z "$cmd_ROOT" ] || sudo -l /bin/bash &>/dev/null
+  [ -z "$cmd_ROOT" ] || sudo -ln /bin/bash &>/dev/null
 }
 
 main() {
@@ -93,7 +93,12 @@ main() {
   if [ -z "$cmd" -o "$cmd" == '-h' -o "$cmd" == '--help' ]; then
     usage
   elif [ -f "$flight_COMMAND_ROOT/$cmd" ]; then
-    exec /bin/bash $flight_COMMAND_ROOT/$cmd "$@"
+    if available "${flight_COMMAND_ROOT}/$cmd"; then
+      exec /bin/bash "${flight_COMMAND_ROOT}/$cmd" "$@"
+    else
+      echo "${flight_NAME} ${cmd}: only available to users with administrative rights."
+      exit 1
+    fi
   else
     x=("${flight_COMMAND_ROOT}/$cmd"*)
 
