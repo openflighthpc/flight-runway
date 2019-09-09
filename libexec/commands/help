@@ -62,7 +62,7 @@ EOF
 }
 
 available() {
-  [ -z "$cmd_ROOT" ] || sudo -l /bin/bash &>/dev/null
+  [ -z "$cmd_ROOT" ] || sudo -ln /bin/bash &>/dev/null
 }
 
 case $action in
