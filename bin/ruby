@@ -47,6 +47,8 @@ _setenv() {
   local _root _lib
   _root=${flight_ROOT}/opt/runway/embedded
 
+  export HOME="${HOME:-$(eval echo ~${USER:-$(/usr/bin/id -un)})}"
+
   PATH=${_root}/bin:$PATH
   LD_LIBRARY_PATH=${_root}/lib:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH
