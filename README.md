@@ -20,16 +20,12 @@ The recommended installation method is to use the RPM provided for
 installation on Enterprise Linux 7 series distributions, e.g. CentOS
 7:
 
-1. Set up the `yum` repository on your system.  For production
-   releases use `openflight.repo` and for development releases use
-   `openflight-dev.repo`:
+1. Set up the `yum` repository on your system.  This will install
+   both the main and development repositories (with dev disabled
+   by default)
 
    ```
-   cd /etc/yum.repos.d
-   # For production releases
-   wget https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/openflight.repo
-   # For development releases
-   wget https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight-dev/openflight-dev.repo
+   yum install https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/x86_64/openflighthpc-release-1-1.noarch.rpm
    ```
 
 2. Rebuild your `yum` cache:
