@@ -44,13 +44,14 @@ module OpenFlight
         )
       end
 
-      def priority_root
-        File.directory?(root) ? root : sysroot
-      end
-
       def banner_template_file
         f = File.join(root, 'banner.erb')
         File.exist?(f) ? f : File.join(sysroot, 'banner.erb')
+      end
+
+      def valid_banner?(banner)
+        File.directory?(root) &&
+          File.exist?(File.join(root, "#{banner}.yml"))
       end
 
       def template
@@ -63,9 +64,13 @@ module OpenFlight
 
       def render(opts, banner = nil)
         render_env = Module.new
-        render_env.instance_variable_set(:@root, priority_root)
         render_env.instance_variable_set(:@opts, opts)
-        render_env.instance_variable_set(:@banner, banner)
+        if valid_banner?(banner)
+          render_env.instance_variable_set(:@root, root)
+          render_env.instance_variable_set(:@banner, banner)
+        else
+          render_env.instance_variable_set(:@root, sysroot)
+        end
         ctx = render_env.instance_eval { binding }
         template.result(ctx)
       end
