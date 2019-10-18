@@ -49,16 +49,25 @@ _setenv() {
 
   export HOME="${HOME:-$(eval echo ~${USER:-$(/usr/bin/id -un)})}"
 
-  PATH=${_root}/bin:$PATH
+  flight_RUBY_orig_LD_LIBRARY_PATH="${LD_LIBRARY_PATH-NULL}"
+  export flight_RUBY_orig_LD_LIBRARY_PATH
   LD_LIBRARY_PATH=${_root}/lib:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH
 
   _lib=${_root}/lib/ruby
   _rv=$(${flight_ROOT}/opt/runway/embedded/bin/ruby --version | cut -f2 -d' ' | cut -f1-2 -d'.').0
 
+  flight_RUBY_orig_GEM_HOME="${GEM_HOME-NULL}"
+  export flight_RUBY_orig_GEM_HOME
   GEM_HOME=${_lib}/gems/${_rv}
+  export GEM_HOME
+  flight_RUBY_orig_GEM_PATH="${GEM_PATH-NULL}"
+  export flight_RUBY_orig_GEM_PATH
   GEM_PATH=${_lib}/gems/${_rv}
+  export GEM_PATH
 
+  flight_RUBY_orig_RUBYLIB="${RUBYLIB-NULL}"
+  export flight_RUBY_orig_RUBYLIB
   RUBYLIB=${_lib}/site_ruby/${_rv}
   RUBYLIB=$RUBYLIB:${_lib}/site_ruby/${_rv}/x86_64-linux
   RUBYLIB=$RUBYLIB:${_lib}/site_ruby
@@ -69,6 +78,7 @@ _setenv() {
   RUBYLIB=$RUBYLIB:${_lib}/${_rv}/x86_64-linux
   export RUBYLIB
 
+  flight_RUBY_orig_SSL_CERT_FILE="${SSL_CERT_FILE-NULL}"
   SSL_CERT_FILE=${_root}/ssl/certs/cacert.pem
   export SSL_CERT_FILE
 
@@ -80,4 +90,4 @@ _setup
 _setenv
 unset _setup _setenv
 
-exec ${flight_ROOT}/opt/runway/embedded/bin/ruby "$@"
+exec ${flight_ROOT}/opt/runway/embedded/bin/ruby -ropenflight "$@"
