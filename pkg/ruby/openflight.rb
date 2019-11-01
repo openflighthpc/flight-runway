@@ -52,9 +52,10 @@ module OpenFlight
     end
 
     def with_unbundled_env(&block)
-      if Kernel.const_defined?(:Bundler) && Bundler.respond_to?(:with_unbundled_env)
+      if Kernel.const_defined?(:Bundler)
         with_standard_env do
-          Bundler.with_unbundled_env do
+          msg = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
+          Bundler.__send__(msg) do
             block.call
           end
         end
