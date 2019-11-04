@@ -29,6 +29,7 @@ module OpenFlight
     ENV_MUTEX = Mutex.new
     FLIGHT_RUBY_ORIG_PREFIX = 'flight_RUBY_orig_'.freeze
     NULL = 'NULL'.freeze
+    ORIGINAL_ENV = ENV.to_hash
     STANDARD_ENV = ENV.to_hash.tap do |h|
       h.keys.select do |k|
         k.start_with?(FLIGHT_RUBY_ORIG_PREFIX)
@@ -46,23 +47,23 @@ module OpenFlight
     def with_standard_env
       with_env(standard_env) { yield }
     end
+    alias with_unbundled_env with_standard_env
+
+    def with_original_env
+      with_env(original_env) { yield }
+    end
 
     def standard_env
       STANDARD_ENV.clone
     end
 
-    def with_unbundled_env(&block)
-      if Kernel.const_defined?(:Bundler)
-        with_standard_env do
-          msg = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
-          Bundler.__send__(msg) do
-            block.call
-          end
-        end
-      else
-        with_standard_env do
-          block.call
-        end
+    def original_env
+      ORIGINAL_ENV.clone
+    end
+
+    def set_original_env
+      ENV_MUTEX.synchronize do
+        ENV.clear.replace(original_env)
       end
     end
 
