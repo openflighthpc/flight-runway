@@ -5,7 +5,7 @@
 ##
 ################################################################################
 flight() {
-  ${flight_ROOT}/bin/flight "$@"
+  flexec flight "$@"
 }
 
 fl() {
@@ -13,7 +13,7 @@ fl() {
 }
 
 flactivate() {
-  ${flight_ROOT}/bin/flactivate
+  flexec flactivate
 }
 
 flexec() {
@@ -21,7 +21,12 @@ flexec() {
     echo "flexec: usage: flexec <command> [<arg>...]"
     return 1
   elif [ -x "${flight_ROOT}/bin/$1" ]; then
-    "${flight_ROOT}/bin/$1" "${@:2}"
+    if [ "${-#*i}" != "$-" ]; then
+      flight_MODE=interactive
+    else
+      flight_MODE=batch
+    fi
+    flight_MODE=${flight_MODE} "${flight_ROOT}/bin/$1" "${@:2}"
     return $?
   else
     echo "flexec: not found: $1" 1>&2
@@ -30,7 +35,7 @@ flexec() {
 }
 
 flintegrate() {
-  ${flight_ROOT}/bin/flintegrate "$@"
+  flexec flintegrate "$@"
 }
 
 export -f flight fl flexec flactivate flintegrate
