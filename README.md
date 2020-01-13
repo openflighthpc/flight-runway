@@ -25,7 +25,7 @@ installation on Enterprise Linux 7 series distributions, e.g. CentOS
    by default)
 
    ```
-   yum install https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/x86_64/openflighthpc-release-1-1.noarch.rpm
+   yum install https://repo.openflighthpc.org/openflight/centos/7/x86_64/openflighthpc-release-2-1.noarch.rpm
    ```
 
 2. Rebuild your `yum` cache:
