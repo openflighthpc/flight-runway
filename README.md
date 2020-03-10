@@ -61,7 +61,7 @@ You will need a functional Ruby 2.5+ environment (one installed via RVM or simil
 
     ```bash
     cd /opt/flight/bin
-    for a in bundle gem irb rake ruby 
+    for a in bundle gem irb rake ruby ; do
       rm -f $a
       ln -s $(which $a) $a
     done
