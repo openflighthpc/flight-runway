@@ -73,7 +73,7 @@ You will need a functional Ruby 2.5+ environment (one installed via RVM or simil
     cd /opt/flight
     mv pkg/bin/flintegrate bin/flintegrate
     mkdir -p /opt/flight/opt/runway
-    mv pkg/dist /opt/flight/opt/runway
+    mv pkg/* /opt/flight/opt/runway
     rmdir pkg
     ```
 
