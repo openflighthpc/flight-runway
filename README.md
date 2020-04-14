@@ -10,7 +10,7 @@ A base platform/environment for managing and executing OpenFlight tools.
 * `flexec` - shorthand to execute a binary within the Flight Runway environment (for e.g. `irb`, `bundle` etc.).
 * `flenable` - configure system-wide or user profile scripts to integrate Flight Runway with your environment.
 * `flactivate` - execute a `bash` shell preconfigured for use with Flight Runway.
-* `flintegrate` - install an OpenFlight tool using a tool descriptor file.
+* `flintegrate` - install an OpenFlight tool using a tool descriptor file. [DEPRECATED]
 
 ## Installation
 
@@ -25,7 +25,7 @@ installation on Enterprise Linux 7 series distributions, e.g. CentOS
    by default)
 
    ```
-   yum install https://openflighthpc.s3-eu-west-1.amazonaws.com/repos/openflight/x86_64/openflighthpc-release-1-1.noarch.rpm
+   yum install https://repo.openflighthpc.org/openflight/centos/7/x86_64/openflighthpc-release-2-1.noarch.rpm
    ```
 
 2. Rebuild your `yum` cache:
@@ -143,7 +143,27 @@ Installing to /home/chrisdemo/.bashrc...  OK
 
 On future login sessions, the `flight` tool, and its shorthand (`fl`), are available at the terminal, along with the `flexec` and `flintegrate` tools.
 
-## Installing and integrating tools
+## Installing and integrating tools 
+
+With Flight Runway up and running you'll probably want to install one or more of the OpenFlight tools. This is achieved using `yum` alongside the OpenFlight repository. 
+
+This is the recommended method for installing and integrating OpenFlight tools with Runway so the repository and Flight Runway should have been installed as described in [the installation section](#From-the-OpenFlight-yum-repository).
+
+Presuming that the OpenFlight repositories are in place, tools can be searched for as follows:
+
+```
+yum search flight-*
+```
+
+The chosen tools can then be installed using yum as normal:
+
+```
+yum install flight-starter flight-env flight-desktop
+```
+
+## Installing and integrating tools [DEPRECATED]
+
+**Note: Installing additional tools with flintegrate is a deprecated process. All tools are now available through the OpenFlight yum repository**
 
 With Flight Runway up and running you'll probably want to install one or more of the OpenFlight tools.  This is facilitated by using the `flintegrate` command which takes a tool descriptor file and integrates the command into the Flight Runway environment.
 
