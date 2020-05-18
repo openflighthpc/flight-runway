@@ -5,6 +5,14 @@
 ##
 ################################################################################
 flight() {
+  local cmd
+  if [ "$1" ]; then
+    cmd=$("${flight_ROOT}"/bin/flight --resolve $1)
+    if [ "$(type -t flight_$cmd)" == "function" ]; then
+      flight_${cmd} "${@:2}"
+      return
+    fi
+  fi
   flexec flight "$@"
 }
 
