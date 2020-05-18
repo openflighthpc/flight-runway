@@ -92,12 +92,37 @@ main() {
 
   if [ -z "$cmd" -o "$cmd" == '-h' -o "$cmd" == '--help' ]; then
     usage
+  elif [[ "$cmd" == *" "* ]]; then
+    echo "${flight_NAME}: bad command name: '$cmd'"
+    exit 5
+  elif [ "$cmd" == '--resolve' ]; then
+    if [ -z "$1" ]; then
+      echo "${flight_NAME}: resolve requires argument: flight --resolve <command prefix>"
+      exit 1
+    elif [ -f "$flight_COMMAND_ROOT/$1" ]; then
+      echo "$1"
+    else
+      shopt -s nullglob
+      x=("${flight_COMMAND_ROOT}/$1"*)
+      if [ ${#x[*]} = 0 ]; then
+        # no match
+        exit 2
+      elif [ ${#x[*]} = 1 ]; then
+        if available "${x[0]}"; then
+          basename "${x[0]}"
+        else
+          exit 3
+        fi
+      else
+        exit 4
+      fi
+    fi
   elif [ -f "$flight_COMMAND_ROOT/$cmd" ]; then
     if available "${flight_COMMAND_ROOT}/$cmd"; then
       exec /bin/bash "${flight_COMMAND_ROOT}/$cmd" "$@"
     else
       echo "${flight_NAME} ${cmd}: only available to users with administrative rights."
-      exit 1
+      exit 3
     fi
   else
     x=("${flight_COMMAND_ROOT}/$cmd"*)
@@ -105,14 +130,14 @@ main() {
     if [ $x = "${flight_COMMAND_ROOT}/$cmd"'*' ]; then
       # no match
       echo "${flight_NAME}: '$cmd' is not a known command. See '${flight_NAME} --help'."
-      exit 1
+      exit 2
     elif [ ${#x[*]} = 1 ]; then
       # matched one
       if available "${x[0]}"; then
         exec /bin/bash "${flight_COMMAND_ROOT}/$cmd"* "$@"
       else
         echo "${flight_NAME} $(basename ${x[0]}): only available to users with administrative rights."
-        exit 1
+        exit 3
       fi
     elif [ ${#x[*]} -gt 1 ]; then
       # matched > 1
@@ -132,7 +157,7 @@ main() {
         echo "        $(basename "$a")"
       done
       echo ""
-      exit 1
+      exit 4
     fi
   fi
 }
