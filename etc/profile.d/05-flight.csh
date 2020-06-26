@@ -34,7 +34,7 @@ alias flexec $prefix'$flight_ROOT/bin/flexec \!*; '$postfix
 alias flactivate $prefix'$flight_ROOT/bin/flactivate \!*; '$postfix
 alias flintegrate $prefix'$flight_ROOT/bin/flintegrate \!*; '$postfix
 
-if ($?flight_DEFINES)
+if ($?flight_DEFINES) then
   setenv flight_DEFINES "${flight_DEFINES} flight fl flexec flactivate flintegrate"
 endif
 
