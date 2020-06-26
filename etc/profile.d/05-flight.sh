@@ -35,6 +35,7 @@ flexec() {
       flight_MODE=batch
     fi
     flight_MODE=${flight_MODE} "${flight_ROOT}/bin/$1" "${@:2}"
+    unset flight_MODE
     return $?
   else
     echo "flexec: not found: $1" 1>&2
@@ -46,4 +47,7 @@ flintegrate() {
   flexec flintegrate "$@"
 }
 
+if [ "${flight_DEFINES}" ]; then
+  flight_DEFINES+=(flight fl flexec flactivate flintegrate)
+fi
 export -f flight fl flexec flactivate flintegrate

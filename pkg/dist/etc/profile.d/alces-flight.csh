@@ -5,7 +5,7 @@
 ##
 ################################################################################
 if (! $?flight_ROOT) then
-  setenv flight_ROOT=/opt/flight
+  setenv flight_ROOT /opt/flight
 endif
 if ( -d $flight_ROOT/etc/profile.d ) then
   set nonomatch
