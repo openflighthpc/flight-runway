@@ -34,9 +34,11 @@ flexec() {
     else
       flight_MODE=batch
     fi
+    local exit_code
     flight_MODE=${flight_MODE} "${flight_ROOT}/bin/$1" "${@:2}"
+    exit_code=$?
     unset flight_MODE
-    return $?
+    return $exit_code
   else
     echo "flexec: not found: $1" 1>&2
     return 1
