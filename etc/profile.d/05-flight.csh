@@ -28,7 +28,7 @@ if ($?noglob) then
 endif
 set postfix = "set _exit="'$status'"; $postfix; test 0 = "'$_exit;'
 
-alias flight $prefix'$flight_ROOT/bin/flight \!*; '$postfix
+alias flight $prefix'source $flight_ROOT/libexec/runway/flight.csh; '$postfix
 alias fl $prefix'$flight_ROOT/bin/flight \!*; '$postfix
 alias flexec $prefix'$flight_ROOT/bin/flexec \!*; '$postfix
 alias flactivate $prefix'$flight_ROOT/bin/flactivate \!*; '$postfix
