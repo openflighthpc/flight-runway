@@ -7,6 +7,10 @@
 flight() {
   local cmd
   if [ "$1" ]; then
+    if [ "$(type -t flight_$1)" == "function" ]; then
+      flight_${1} "${@:2}"
+      return
+    fi
     cmd=$("${flight_ROOT}"/bin/flight --resolve $1)
     if [ "$(type -t flight_$cmd)" == "function" ]; then
       flight_${cmd} "${@:2}"
