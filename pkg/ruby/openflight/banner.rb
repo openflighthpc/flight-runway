@@ -57,8 +57,7 @@ module OpenFlight
       def template
         ERB.new(
           File.read(banner_template_file),
-          nil,
-          '-'
+          trim_mode: '-'
         )
       end
 
